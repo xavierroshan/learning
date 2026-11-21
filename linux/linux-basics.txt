@@ -1,0 +1,69 @@
+Basic commands
+
+mkdir -p /tmp/asia/india/bangalore ---> creates all the directory if some are missing
+rm  /tmp/file.txt ---> delete a file
+rm -r /tmp/asia ---> deletes directory and contents 
+cp /tmp/asia/india.txt /tmp2/asia/ ---> copy file to another directory
+cp -r /temp/asia /temp2/ ---> copy directory 
+touch file-name.txt. ---> create an empty file 
+cat file-name.txt ---> display the contents of the file 
+cp file-name.txt copy-file-name.txt ---> create a copy of the file 
+mv file-name.txt renamed-file-name.txt ---> rename the file 
+rm file-name.txt ---> delete the file name 
+echo "overwrite the content with this line" > file.txt ---> overwrite the file with >
+echo "append this text to the end" >> file.txt ---> append the text to the end with >>
+ls >> log.txt --> append the output of any command
+cat file-1.txt >> file-2.txt ---> append the content of one file to another
+cat >> file-1.txt << 'EOF'
+line1
+line2
+line3
+EOF
+       ---> append multiple lines
+
+sudo -i ---> run as a root user when you have multiple commands to run 
+whoami ---> give the user
+id ---> gives userid, groupid and group details
+sudo chown deepa:deepa /home/deepa ---> change the ownership of the directory to user deepa and group deepa
+sudo usermod -aG wheel deepa ---> add user deepa to the wheel group. Now deepa has administrative privileges
+ls -l /home/deepa ---> list the contents of the directory with detailed information
+chmod 755 /home/deepa ---> change the permissions of the directory to read, write, and execute for the owner, and read and execute for group and others
+sudo useradd -m -s /bin/bash roshan ---> create a new user roshan with a home directory and bash shell
+sudo passwd roshan ---> set the password for the new user roshan
+sudo groupadd family ---> create a new group named family
+sudo usermod -aG family roshan ---> add user roshan to the family group
+curl -o output-file.txt http://example.com/file.txt ---> download a file from the internet and save it as output-file.txt
+wget -o output-file.txt http://example.com/file.txt ---> download a file from the internet and save it as output-file.txt
+wget -o gnu-hello.tar.gz https://ftp.gnu.org/gnu/hello/hello-2.10.tar.gz ---> download the GNU Hello package and save it as gnu-hello.tar.gz
+curl -o gnu-hello.tar.gz https://ftp.gnu.org/gnu/hello/hello-2.10.tar.gz ---> download the GNU Hello package and save it as gnu-hello.tar.gz
+cat /etc/os-release | grep "^NAME" ---> display the name of the operating system
+
+
+
+Service Management
+systemctl status service-name ---> check the status of a service
+systemctl start service-name ---> start a service
+systemctl stop service-name ---> stop a service
+systemctl restart service-name ---> restart a service
+systemctl enable service-name ---> enable a service to start on boot
+systemctl disable service-name ---> disable a service from starting on boot
+systemctl reload service-name ---> reload the configuration of a service without restarting it
+
+creating a service:
+sudo nano /etc/systemd/system/service-name.service ---> create and edit the service file for the new service
+
+service-name.service ---> manage the newly created service using systemctl commands
+
+[unit]
+Description=My Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/my-service-executable
+
+[Install]
+WantedBy=multi-user.target  
+
+Package Managers:
+

@@ -1,0 +1,64 @@
+DNS Config files:
+
+- The dns details of hosts in a network a machine is aassociated is kept at etc/hosts on a linux machine.
+- It lists the ip adreess and the assocaited host names on the machine
+- host name is not listed doesnt mean machine cant reach other machines in the netwoek. In that case ip name host name needs to be used
+- nsswitch.conf is the file which specifies where to look for host names. There will be entry like "hosts:      files dns".
+in the nsswitch.conf. it means look at the etc/hosts and then DNS. seuence can be reversed as well
+- DNS server ip can be found in the config file etc/resolv.conf
+
+- Command to find the linux installes cat etc/os-release
+- your command to install packages will depend on the release. for centos it is: sudo dnf install -y bind-utils
+- command to find the dns of a machine on k8c: sudo dnf install -y bind-utils
+- nslookup www.google.com. this command is used to find the ip and domain name (human readble name)
+- Note that python can be used on the command line if nslookup is not installed (python3 -c "import socket; print(socket.gethostbyname('kubernetes.default.svc.cluster.local'))"
+
+- ip link command is used to find the interfaces on your machine
+- ip route command shows the routing table
+its give out like below:
+default via 169.254.1.1 dev eth0 
+169.254.1.1 dev eth0 scope link 
+
+
+default via 169.254.1.1 dev eth0  --> means traffic to deafult 0.0.0.0/0 will be routed through the gateway 169.254.1.1 thorough eth0 interface of the machine.
+169.254.1.1 dev eth0 scope link   ---> means that gateway ip 169.254.1.1 is directly reachable from the eth0 interface of the machine.
+
+- ip route add 172.16.0.3 via 169.254.1.1 dev eth0 ->   adds a route to reach the IP 172.16.0.3 through the gateway 169.254.1.1 using the eth0 interface.
+- note that 172.16.0.3 will get added but if machine cannot find it will fall back to the default route.
+
+
+┌──────── Pod "host01" ────────┐   ┌──────── Pod "web-xyz" ───────┐
+│ eth0  10.244.13.90/32        │   │ eth0  10.244.13.91/32        │
+│ default via 169.254.1.1      │   │ default via 169.254.1.1      │
+└──────────────┬───────────────┘   └──────────────┬───────────────┘
+               │ veth cable                       │ veth cable
+┌──────────────┴──────────────────────────────────┴────────────────┐
+│                NODE = THE ROUTER (Linux kernel)                   │
+│                                                                   │
+│   port: cali1a2b3c4d5e6        port: cali9f8e7d6c5b4              │
+│                                                                   │
+│   routing table:                                                  │
+│     10.244.13.90  dev cali1a2b3c4d5e6                             │
+│     10.244.13.91  dev cali9f8e7d6c5b4                             │
+│     default via 10.0.15.1 dev eth0                                │
+│   NAT: pod source IP → node IP when leaving for the lab network   │
+│                                                                   │
+│   port: eth0 / ens5   10.0.15.x                                   │
+└───────────────────────────────┬───────────────────────────────────┘
+                                │
+             lab network 10.0.15.0/24 ──► next router (lab gateway) ──► internet
+
+
+
+
+Firewalls:
+iptables -L ---> display the current iptables rules
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT ---> allow incoming SSH connections
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT ---> allow incoming HTTP connections
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT ---> allow incoming HTTPS connections
+iptables -A INPUT -j DROP ---> drop all other incoming traffic
+iptables -A OUTPUT -p tcp -d 10.0.15.0/24 -j ACCEPT ---> allow outgoing TCP traffic to the lab network
+iptables -A OUTPUT -j DROP ---> drop all other outgoing traffic
+iptables -I INPUT -p tcp --dport 22 -j ACCEPT ---> insert a rule at the top to allow incoming SSH connections
+iptables -I INPUT 2 -p tcp --dport 80 -j ACCEPT ---> insert a rule at the second position to allow incoming HTTP connections
+iptables -I INPUT 3 -p tcp --dport 443 -j ACCEPT ---> insert a rule at the third position to allow incoming HTTPS connections

@@ -1,0 +1,10 @@
+Connecting through ssh through port 22 of a remote linux machine
+
+1. user should have the login access to the remote machine.
+2. Run "ssh-keygen" on your machine and enter a passphrase when asked for.
+3. Publick key generated and stored at "home/user/.ssh" as .pub file and private key stored at the same location
+4. run "ssh-copy-id user@hostid" to copy the private key on the remote machine where "user@hostid" is the remote machine
+5. run "ssh user@hostid" to log into the remote machine
+6. you will find the privare key in "home/user/.ssh/authorized_key"
+7. use "scp /home/bob/caleston-code.tar.gz user@hostid:/home/bob" to copy files to remote server
+8. use following if you want to copy massive amounts of file: rsync -ahz --progress /home/bob/caleston-code.tar.gz user@hostid:/home/bob

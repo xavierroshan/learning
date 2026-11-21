@@ -1,0 +1,6 @@
+etc/hosts --> maps hostnames to IP addresses locally in a network where the machine exists.
+/etc/resolv.conf --> specifies the DNS servers for the system to use for resolving domain names.
+cat /etc/nsswitch.conf --> shows the order in which different sources are used for name resolution (e.g., files, DNS).
+root . Top level domain .com subdomain example.com --> specific domain within the .com TLD
+nslookup --> command-line tool used to query DNS servers for information about domain names and IP addresses.
+dig --> another command-line tool used to query DNS servers, providing more detailed information than nslookup.

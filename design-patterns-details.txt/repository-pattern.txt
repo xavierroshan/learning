@@ -1,0 +1,1429 @@
+Yes. Let's build a **complete Spring Boot example** that is realistic but still beginner-friendly.
+
+We'll use this specific use case:
+
+> **A customer requests a product by SKU. Our application gets the product from a PIM system, but if PIM doesn't have it, it falls back to ERP. The application doesn't know or care where the product came from.**
+
+This will show you exactly where the **Repository Pattern** fits.
+
+---
+
+# 1. The use case
+
+A client calls:
+
+```http
+GET /api/products/ABC-123
+```
+
+We want:
+
+```text
+Client
+  |
+  ↓
+Controller
+  |
+  ↓
+ProductService
+  |
+  ↓
+ProductRepository
+  |
+  +--------→ PIM
+  |
+  +--------→ ERP
+  |
+  ↓
+Product
+  |
+  ↓
+JSON response
+```
+
+The important part is:
+
+```text
+ProductService
+       |
+       ↓
+ProductRepository
+```
+
+The service does **not** directly call PIM or ERP.
+
+---
+
+# 2. Complete project structure
+
+Our Spring Boot project will look like this:
+
+```text
+product-catalog/
+│
+├── src/main/java/com/example/catalog/
+│
+│   ├── ProductCatalogApplication.java
+│   │
+│   ├── controller/
+│   │   └── ProductController.java
+│   │
+│   ├── service/
+│   │   └── ProductService.java
+│   │
+│   ├── repository/
+│   │   ├── ProductRepository.java
+│   │   └── ProductRepositoryImpl.java
+│   │
+│   ├── client/
+│   │   ├── PimClient.java
+│   │   └── ErpClient.java
+│   │
+│   ├── model/
+│   │   ├── Product.java
+│   │   ├── PimProduct.java
+│   │   └── ErpProduct.java
+│   │
+│   └── exception/
+│       └── ProductNotFoundException.java
+│
+└── src/main/resources/
+    └── application.properties
+```
+
+---
+
+# 3. The complete flow
+
+Before writing code, understand the flow:
+
+```text
+GET /api/products/ABC-123
+             |
+             ↓
+     ProductController
+             |
+             ↓
+       ProductService
+             |
+             ↓
+      ProductRepository
+             |
+       +-----+-----+
+       |           |
+       ↓           ↓
+      PIM         ERP
+       |           |
+       +-----+-----+
+             |
+             ↓
+       Product object
+             |
+             ↓
+        Controller
+             |
+             ↓
+          JSON
+```
+
+Now let's build it.
+
+---
+
+# 4. Create the Spring Boot project
+
+You can create a Spring Boot project using Spring Initializr.
+
+Select:
+
+```text
+Project: Maven
+Language: Java
+Spring Boot: current stable version
+Packaging: Jar
+Java: 17 or newer
+```
+
+Dependencies:
+
+```text
+Spring Web
+```
+
+That's enough for this example.
+
+---
+
+# 5. Main application
+
+### `ProductCatalogApplication.java`
+
+```java
+package com.example.catalog;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ProductCatalogApplication {
+
+    public static void main(String[] args) {
+
+        SpringApplication.run(
+                ProductCatalogApplication.class,
+                args
+        );
+    }
+}
+```
+
+This starts Spring Boot.
+
+When you run:
+
+```bash
+mvn spring-boot:run
+```
+
+Spring Boot starts the application.
+
+By default:
+
+```text
+http://localhost:8080
+```
+
+---
+
+# 6. Create our Product model
+
+### `Product.java`
+
+```java
+package com.example.catalog.model;
+
+public class Product {
+
+    private String sku;
+    private String name;
+    private String description;
+    private double price;
+    private int inventory;
+
+    public Product(
+            String sku,
+            String name,
+            String description,
+            double price,
+            int inventory) {
+
+        this.sku = sku;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.inventory = inventory;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public int getInventory() {
+        return inventory;
+    }
+}
+```
+
+This is our application's **standard Product object**.
+
+Notice something important:
+
+It doesn't say:
+
+```text
+PIMProduct
+ERPProduct
+MarketplaceProduct
+```
+
+It's simply:
+
+```text
+Product
+```
+
+This is the model our business application understands.
+
+---
+
+# 7. PIM's model
+
+Pretend our PIM system returns data in this format.
+
+### `PimProduct.java`
+
+```java
+package com.example.catalog.model;
+
+public class PimProduct {
+
+    private String productCode;
+    private String title;
+    private String description;
+    private double price;
+
+    public PimProduct(
+            String productCode,
+            String title,
+            String description,
+            double price) {
+
+        this.productCode = productCode;
+        this.title = title;
+        this.description = description;
+        this.price = price;
+    }
+
+    public String getProductCode() {
+        return productCode;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+}
+```
+
+Notice that PIM calls:
+
+```text
+productCode
+```
+
+while our application calls it:
+
+```text
+sku
+```
+
+That's okay.
+
+The Repository will translate between them.
+
+---
+
+# 8. ERP's model
+
+Suppose ERP returns:
+
+### `ErpProduct.java`
+
+```java
+package com.example.catalog.model;
+
+public class ErpProduct {
+
+    private String itemNumber;
+    private String description;
+    private double unitPrice;
+    private int availableQuantity;
+
+    public ErpProduct(
+            String itemNumber,
+            String description,
+            double unitPrice,
+            int availableQuantity) {
+
+        this.itemNumber = itemNumber;
+        this.description = description;
+        this.unitPrice = unitPrice;
+        this.availableQuantity = availableQuantity;
+    }
+
+    public String getItemNumber() {
+        return itemNumber;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getUnitPrice() {
+        return unitPrice;
+    }
+
+    public int getAvailableQuantity() {
+        return availableQuantity;
+    }
+}
+```
+
+ERP calls:
+
+```text
+itemNumber
+unitPrice
+availableQuantity
+```
+
+Our application calls:
+
+```text
+sku
+price
+inventory
+```
+
+Again, the Repository handles this translation.
+
+---
+
+# 9. Create the PIM client
+
+Now we need something that represents communication with PIM.
+
+### `PimClient.java`
+
+```java
+package com.example.catalog.client;
+
+import com.example.catalog.model.PimProduct;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PimClient {
+
+    public PimProduct getProduct(String sku) {
+
+        System.out.println(
+                "Calling PIM for SKU: " + sku
+        );
+
+        if (sku.equals("ABC-123")) {
+
+            return new PimProduct(
+                    "ABC-123",
+                    "Premium Running Shoes",
+                    "Lightweight running shoes",
+                    119.99
+            );
+        }
+
+        return null;
+    }
+}
+```
+
+We're not actually calling a real PIM API yet.
+
+We're simulating it.
+
+Imagine this were actually:
+
+```text
+HTTP GET
+https://pim.company.com/products/ABC-123
+```
+
+---
+
+# 10. Create the ERP client
+
+### `ErpClient.java`
+
+```java
+package com.example.catalog.client;
+
+import com.example.catalog.model.ErpProduct;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ErpClient {
+
+    public ErpProduct getProduct(String sku) {
+
+        System.out.println(
+                "Calling ERP for SKU: " + sku
+        );
+
+        if (sku.equals("ABC-123")) {
+
+            return new ErpProduct(
+                    "ABC-123",
+                    "Running Shoes",
+                    125.00,
+                    50
+            );
+        }
+
+        return null;
+    }
+}
+```
+
+Again, this is simulating:
+
+```text
+HTTP GET
+https://erp.company.com/items/ABC-123
+```
+
+---
+
+# 11. Now comes the important part — Repository interface
+
+### `ProductRepository.java`
+
+```java
+package com.example.catalog.repository;
+
+import com.example.catalog.model.Product;
+
+public interface ProductRepository {
+
+    Product findBySku(String sku);
+}
+```
+
+This is the **contract**.
+
+It says:
+
+> Anyone implementing ProductRepository must provide a way to find a Product by SKU.
+
+Notice that the interface knows nothing about:
+
+```text
+PIM
+ERP
+REST
+HTTP
+JSON
+```
+
+It only knows:
+
+```text
+findBySku()
+```
+
+---
+
+# 12. Implement the Repository
+
+Now create:
+
+### `ProductRepositoryImpl.java`
+
+```java
+package com.example.catalog.repository;
+
+import com.example.catalog.client.ErpClient;
+import com.example.catalog.client.PimClient;
+import com.example.catalog.model.ErpProduct;
+import com.example.catalog.model.PimProduct;
+import com.example.catalog.model.Product;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class ProductRepositoryImpl
+        implements ProductRepository {
+
+    private final PimClient pimClient;
+    private final ErpClient erpClient;
+
+    public ProductRepositoryImpl(
+            PimClient pimClient,
+            ErpClient erpClient) {
+
+        this.pimClient = pimClient;
+        this.erpClient = erpClient;
+    }
+
+    @Override
+    public Product findBySku(String sku) {
+
+        // Step 1: Try PIM
+        PimProduct pimProduct =
+                pimClient.getProduct(sku);
+
+        if (pimProduct != null) {
+
+            return new Product(
+                    pimProduct.getProductCode(),
+                    pimProduct.getTitle(),
+                    pimProduct.getDescription(),
+                    pimProduct.getPrice(),
+                    0
+            );
+        }
+
+        // Step 2: PIM didn't have it.
+        // Try ERP.
+        ErpProduct erpProduct =
+                erpClient.getProduct(sku);
+
+        if (erpProduct != null) {
+
+            return new Product(
+                    erpProduct.getItemNumber(),
+                    "Unknown",
+                    erpProduct.getDescription(),
+                    erpProduct.getUnitPrice(),
+                    erpProduct.getAvailableQuantity()
+            );
+        }
+
+        // Step 3: Neither system has the product.
+        return null;
+    }
+}
+```
+
+This is where the magic happens.
+
+---
+
+# 13. What is this Repository actually doing?
+
+When the service calls:
+
+```java
+productRepository.findBySku("ABC-123");
+```
+
+the Repository does:
+
+```text
+                 findBySku("ABC-123")
+                          |
+                          ↓
+                        PIM
+                          |
+                     Found?
+                    /       \
+                  YES        NO
+                   |          |
+                   ↓          ↓
+               Convert      ERP
+               PIM data       |
+                              ↓
+                           Found?
+                          /       \
+                        YES        NO
+                         |          |
+                         ↓          ↓
+                      Convert     null
+```
+
+The service doesn't know any of this.
+
+---
+
+# 14. Create the Service
+
+### `ProductService.java`
+
+```java
+package com.example.catalog.service;
+
+import com.example.catalog.model.Product;
+import com.example.catalog.repository.ProductRepository;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ProductService {
+
+    private final ProductRepository productRepository;
+
+    public ProductService(
+            ProductRepository productRepository) {
+
+        this.productRepository = productRepository;
+    }
+
+    public Product getProduct(String sku) {
+
+        return productRepository.findBySku(sku);
+    }
+}
+```
+
+Look how simple this is.
+
+The service says:
+
+```java
+return productRepository.findBySku(sku);
+```
+
+It doesn't say:
+
+```java
+pimClient.getProduct()
+```
+
+or:
+
+```java
+erpClient.getProduct()
+```
+
+That's the benefit of the Repository abstraction.
+
+---
+
+# 15. Create the Controller
+
+### `ProductController.java`
+
+```java
+package com.example.catalog.controller;
+
+import com.example.catalog.model.Product;
+import com.example.catalog.service.ProductService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/products")
+public class ProductController {
+
+    private final ProductService productService;
+
+    public ProductController(
+            ProductService productService) {
+
+        this.productService = productService;
+    }
+
+    @GetMapping("/{sku}")
+    public ResponseEntity<Product> getProduct(
+            @PathVariable String sku) {
+
+        Product product =
+                productService.getProduct(sku);
+
+        if (product == null) {
+
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(product);
+    }
+}
+```
+
+Now we have our complete request flow.
+
+---
+
+# 16. Run the application
+
+From your project directory:
+
+```bash
+mvn spring-boot:run
+```
+
+You should see something similar to:
+
+```text
+Tomcat started on port 8080
+Started ProductCatalogApplication
+```
+
+---
+
+# 17. Call the API
+
+Open:
+
+```text
+http://localhost:8080/api/products/ABC-123
+```
+
+Or use curl:
+
+```bash
+curl http://localhost:8080/api/products/ABC-123
+```
+
+The request travels through:
+
+```text
+Browser
+   |
+   ↓
+ProductController
+   |
+   ↓
+ProductService
+   |
+   ↓
+ProductRepository
+   |
+   ↓
+PimClient
+```
+
+Because PIM contains:
+
+```text
+ABC-123
+```
+
+the response is:
+
+```json
+{
+  "sku": "ABC-123",
+  "name": "Premium Running Shoes",
+  "description": "Lightweight running shoes",
+  "price": 119.99,
+  "inventory": 0
+}
+```
+
+---
+
+# 18. Let's trace it line by line
+
+This is the most important part.
+
+The user sends:
+
+```http
+GET /api/products/ABC-123
+```
+
+### Step 1 — Controller
+
+Spring calls:
+
+```java
+@GetMapping("/{sku}")
+public ResponseEntity<Product> getProduct(
+        @PathVariable String sku)
+```
+
+Spring extracts:
+
+```text
+ABC-123
+```
+
+into:
+
+```java
+sku
+```
+
+---
+
+### Step 2 — Controller calls Service
+
+```java
+Product product =
+        productService.getProduct(sku);
+```
+
+So:
+
+```text
+Controller
+    ↓
+Service
+```
+
+---
+
+### Step 3 — Service calls Repository
+
+Inside Service:
+
+```java
+return productRepository.findBySku(sku);
+```
+
+Now:
+
+```text
+Service
+   ↓
+ProductRepository
+```
+
+The Service doesn't know whether it's:
+
+```text
+PIM
+ERP
+Database
+Redis
+Marketplace
+```
+
+---
+
+### Step 4 — Repository calls PIM
+
+Inside Repository:
+
+```java
+PimProduct pimProduct =
+        pimClient.getProduct(sku);
+```
+
+So:
+
+```text
+Repository
+     ↓
+PimClient
+     ↓
+PIM
+```
+
+PIM returns:
+
+```text
+PimProduct
+```
+
+---
+
+### Step 5 — Repository converts PIM model
+
+PIM gives:
+
+```text
+productCode
+title
+description
+price
+```
+
+The repository creates:
+
+```java
+new Product(
+    pimProduct.getProductCode(),
+    pimProduct.getTitle(),
+    pimProduct.getDescription(),
+    pimProduct.getPrice(),
+    0
+);
+```
+
+So:
+
+```text
+PimProduct
+     ↓
+Repository
+     ↓
+Product
+```
+
+This is called **mapping**.
+
+---
+
+# 19. Now test the ERP fallback
+
+Our PIM only recognizes:
+
+```text
+ABC-123
+```
+
+Let's request:
+
+```bash
+curl http://localhost:8080/api/products/XYZ-999
+```
+
+PIM says:
+
+```text
+Not found
+```
+
+The Repository then executes:
+
+```java
+ErpProduct erpProduct =
+        erpClient.getProduct(sku);
+```
+
+If ERP has the product:
+
+```text
+ERP
+ ↓
+ErpProduct
+ ↓
+Repository
+ ↓
+Product
+```
+
+The response might be:
+
+```json
+{
+  "sku": "XYZ-999",
+  "name": "Unknown",
+  "description": "Running Shoes",
+  "price": 125.0,
+  "inventory": 50
+}
+```
+
+---
+
+# 20. What if neither system has the product?
+
+The Repository returns:
+
+```java
+return null;
+```
+
+The Service returns:
+
+```text
+null
+```
+
+The Controller executes:
+
+```java
+if (product == null) {
+    return ResponseEntity.notFound().build();
+}
+```
+
+The user receives:
+
+```http
+404 Not Found
+```
+
+---
+
+# 21. But we can improve this design
+
+Returning `null` isn't ideal.
+
+A better Repository interface is:
+
+```java
+Optional<Product> findBySku(String sku);
+```
+
+Then:
+
+```java
+@Override
+public Optional<Product> findBySku(String sku) {
+```
+
+And if nothing exists:
+
+```java
+return Optional.empty();
+```
+
+If found:
+
+```java
+return Optional.of(product);
+```
+
+Then the service:
+
+```java
+public Optional<Product> getProduct(String sku) {
+
+    return productRepository.findBySku(sku);
+}
+```
+
+This is safer than using `null`.
+
+---
+
+# 22. Even more realistic: separate source repositories
+
+The previous example is useful for learning, but in a real enterprise application I'd usually make the architecture more explicit:
+
+```text
+ProductService
+       |
+       ↓
+CatalogRepository
+       |
+       +----------------+
+       |                |
+       ↓                ↓
+PimProductRepository   ErpProductRepository
+       |                |
+       ↓                ↓
+   PimClient         ErpClient
+       |                |
+       ↓                ↓
+      PIM              ERP
+```
+
+For example:
+
+```java
+public interface PimProductRepository {
+
+    Optional<PimProduct> findBySku(String sku);
+}
+```
+
+and:
+
+```java
+public interface ErpProductRepository {
+
+    Optional<ErpProduct> findBySku(String sku);
+}
+```
+
+Then the higher-level catalog repository composes them.
+
+---
+
+# 23. An enterprise-style version
+
+You might eventually have:
+
+```text
+                    ProductService
+                          |
+                          ↓
+                 CatalogRepository
+                          |
+          +---------------+---------------+
+          |               |               |
+          ↓               ↓               ↓
+     PIM Repository  ERP Repository  Marketplace Repository
+          |               |               |
+          ↓               ↓               ↓
+       PIM API          ERP API       Marketplace API
+```
+
+The individual repositories deal with their own source.
+
+The Catalog Repository combines the results.
+
+That's often cleaner than putting everything into one giant class.
+
+---
+
+# 24. Where does the database fit?
+
+Suppose your application also maintains a local product database.
+
+Then:
+
+```text
+                    CatalogRepository
+                          |
+        +-----------------+-----------------+
+        |                 |                 |
+        ↓                 ↓                 ↓
+      Local DB           PIM               ERP
+```
+
+Maybe your strategy is:
+
+```text
+1. Check local cache/database
+2. If missing → PIM
+3. If missing → ERP
+4. Combine data
+5. Return Product
+```
+
+Then the Repository becomes the single place responsible for that data-access strategy.
+
+---
+
+# 25. Where would Redis fit?
+
+You might eventually do:
+
+```text
+                 ProductService
+                       |
+                       ↓
+                ProductRepository
+                       |
+                       ↓
+                    Redis
+                   /     \
+                HIT       MISS
+                 |          |
+                 ↓          ↓
+              Product    PIM/ERP
+                            |
+                            ↓
+                         Redis
+```
+
+The Service doesn't change.
+
+It still does:
+
+```java
+productRepository.findBySku(sku);
+```
+
+That's a major advantage of abstraction.
+
+---
+
+# 26. Where does CQRS from your previous question fit?
+
+Now we can connect the two concepts.
+
+You asked earlier about:
+
+> **CQRS — separating heavy read (browsing) from heavy write (checkout)**
+
+Imagine this architecture:
+
+```text
+                         API
+                          |
+             +------------+------------+
+             |                         |
+             ↓                         ↓
+        Product Query             Product Command
+          Service                    Service
+             |                         |
+             ↓                         ↓
+       Read Repository          Write Repository
+             |                         |
+             ↓                         ↓
+        Redis / DB                ERP / PIM
+```
+
+The **Repository Pattern** is the abstraction used inside each side.
+
+CQRS answers:
+
+> **Should reading and writing use the same model/path?**
+
+Repository Pattern answers:
+
+> **How should the application access the underlying data source without coupling business logic to it?**
+
+They solve different problems.
+
+---
+
+# 27. The complete architecture
+
+Putting everything together:
+
+```text
+                         CLIENT
+                           |
+                           |
+                           ↓
+                   ProductController
+                           |
+                           ↓
+                    ProductService
+                           |
+                           ↓
+                  ProductRepository
+                           |
+              +------------+------------+
+              |                         |
+              ↓                         ↓
+         PimClient                  ErpClient
+              |                         |
+              ↓                         ↓
+             PIM                       ERP
+              |                         |
+              +------------+------------+
+                           |
+                           ↓
+                     Product Model
+                           |
+                           ↓
+                    ProductController
+                           |
+                           ↓
+                         JSON
+```
+
+The most important boundary is:
+
+```text
+              BUSINESS LOGIC
+                    |
+                    |
+              ProductService
+                    |
+              ----------------
+              REPOSITORY
+              ----------------
+                    |
+                    |
+            DATA ACCESS DETAILS
+```
+
+---
+
+# 28. What happens if we replace PIM?
+
+Suppose six months from now the company replaces:
+
+```text
+Old PIM
+```
+
+with:
+
+```text
+New PIM
+```
+
+Without Repository Pattern:
+
+```text
+Controller
+Service
+Business Logic
+Order Logic
+Catalog Logic
+```
+
+might all have direct PIM calls.
+
+You could have to change many classes.
+
+With Repository Pattern:
+
+```text
+ProductService
+      |
+      ↓
+ProductRepository
+      |
+      ↓
+NewPimClient
+      |
+      ↓
+New PIM
+```
+
+The Service can remain:
+
+```java
+public Product getProduct(String sku) {
+    return productRepository.findBySku(sku);
+}
+```
+
+That's **loose coupling**.
+
+---
+
+# 29. What you should remember for Spring Boot interviews
+
+If someone asks:
+
+**"Explain Repository Pattern using a product catalog example."**
+
+You can explain:
+
+> "We have product information distributed across systems such as PIM and ERP. Rather than allowing our business services to directly call those systems, we define a `ProductRepository` interface with operations such as `findBySku()`. The repository implementation handles source-specific API calls, mapping, fallback logic, caching, and error handling. The `ProductService` depends only on the repository interface, so it remains independent of the underlying data source."
+
+Then draw:
+
+```text
+             ProductService
+                    |
+                    ↓
+           ProductRepository
+                    |
+           +--------+--------+
+           |                 |
+           ↓                 ↓
+          PIM               ERP
+           |                 |
+           ↓                 ↓
+       PimProduct        ErpProduct
+           \                 /
+            \               /
+             ↓             ↓
+               Product
+```
+
+That is the core of the pattern.
+
+---
+
+## One very important distinction
+
+Don't memorize:
+
+> **"Repository = database."**
+
+That's too narrow.
+
+Instead remember:
+
+> **Repository = abstraction over data access.**
+
+The underlying source could be:
+
+```text
+Database
+REST API
+ERP
+PIM
+Marketplace
+Redis
+Elasticsearch
+File
+Cloud storage
+```
+
+The application simply asks:
+
+```java
+productRepository.findBySku("ABC-123");
+```
+
+and the Repository takes care of **where and how that product is obtained**.

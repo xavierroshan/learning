@@ -1,0 +1,28 @@
+                   CUSTOMER
+                       |
+                       |
+                       | https://shop.lululemon.com
+                       |
+                       v
+                     DNS
+                       |
+                       | Resolve hostname
+                       v
+                    CDN / Edge
+                       |
+             +---------+---------+
+             |                   |
+          CACHE HIT          CACHE MISS /
+             |               dynamic request
+             |                   |
+             v                   v
+          Customer         Load Balancer
+                                |
+                    +-----------+-----------+
+                    |           |           |
+                    v           v           v
+                 App #1      App #2      App #3
+                    |           |           |
+                    +-----------+-----------+
+                                |
+                           API Services

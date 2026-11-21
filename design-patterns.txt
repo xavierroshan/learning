@@ -1,0 +1,65 @@
+Tier 1 — Foundational (Core to Almost Every Retail System)
+Event-Driven Architecture — real-time inventory sync, order events, omnichannel triggers
+Microservices Architecture — decomposed catalog/cart/order/payment/fulfillment services
+CQRS — separating heavy read (browsing) from heavy write (checkout) paths
+Repository Pattern — unifying access to catalog data across ERP/PIM/marketplace sources
+Strategy Pattern — swappable pricing, discount, and shipping calculation logic
+Observer Pattern — inventory/order status change notifications
+API Gateway Pattern — single entry point for storefront, mobile, POS clients
+Saga Pattern — distributed order transactions across inventory/payment/shipping services
+Circuit Breaker Pattern — resilience against payment gateway/API failures at peak load
+Factory Pattern — creating payment processors, shipment types, order types
+
+Tier 2 — High Priority (Common in Scaled Retail Platforms)
+Chain of Responsibility — fraud detection, order validation pipelines
+Command Pattern — cart actions, order queues, undo/redo, retry logic
+Decorator Pattern — product customization, add-ons, bundling
+CDC (Change Data Capture) — syncing POS/transactional data into analytics pipelines
+Lambda/Kappa Architecture — combining batch + streaming for demand sensing
+Singleton Pattern — shared config, cache managers, connection pools
+Adapter Pattern — integrating disparate third-party logistics/payment APIs
+Facade Pattern — simplifying complex subsystems (e.g., unified checkout facade over tax, shipping, payment)
+Bulkhead Pattern — isolating failures (e.g., search outage doesn't take down checkout)
+Retry Pattern with Exponential Backoff — handling transient failures in distributed calls
+
+Tier 3 — Data & Analytics Patterns
+Data Lakehouse Pattern — unifying structured/unstructured retail data (sales, clickstream, reviews)
+Star Schema / Dimensional Modeling — sales and inventory reporting warehouses
+Slowly Changing Dimensions (SCD) — tracking historical pricing, customer profile changes
+Medallion Architecture (Bronze/Silver/Gold) — data pipeline maturity layering, common in Databricks-style retail pipelines
+Feature Store Pattern — reusable ML features for recommendation/demand forecasting models
+Real-Time Personalization Pipeline — streaming clickstream into recommendation engines
+Master Data Management (MDM) — single source of truth for product/customer data
+Data Mesh — domain-oriented decentralized data ownership across business units
+
+Tier 4 — Omnichannel & Customer Experience Patterns
+Unified Commerce Pattern — single source of truth across online, in-store, mobile
+Buy Online Pickup In Store (BOPIS) Pattern — inventory reservation workflow
+Endless Aisle Pattern — in-store kiosk ordering from full online catalog
+Ship-from-Store Pattern — using store inventory as fulfillment nodes
+Click-and-Collect Locker Pattern — automated pickup fulfillment
+Progressive Profiling Pattern — gradually building customer profiles across touchpoints
+Session Replay/Personalization Pattern — adapting UX based on browsing behavior
+
+Tier 5 — Inventory & Supply Chain Patterns
+Just-In-Time (JIT) Inventory Pattern
+Safety Stock / Reorder Point Pattern
+ATP (Available-to-Promise) Pattern — real-time inventory promise calculation
+Distributed Order Management (DOM) Pattern — routing orders to optimal fulfillment node
+Vendor-Managed Inventory (VMI) Pattern
+Demand Forecasting Pattern — statistical/ML-based replenishment planning
+Cross-Docking Pattern — minimizing warehouse dwell time
+
+Tier 6 — Pricing, Promotions & Loyalty Patterns
+Dynamic Pricing Pattern — real-time price adjustment based on demand/competition
+Tiered Loyalty Pattern — points/status-based reward structuring
+Bundle Pricing Pattern — composite product pricing logic
+Markdown Optimization Pattern — algorithmic clearance pricing
+
+Tier 7 — Security & Compliance Patterns
+Tokenization Pattern — protecting payment card data (PCI compliance)
+Role-Based Access Control (RBAC) — admin/store associate/customer permission layers
+Idempotency Pattern — preventing duplicate order/payment processing on retries
+
+Tier 8 — Emerging/Niche
+Digital Twin Pattern — simulating store layouts/supply chains for optimization testing

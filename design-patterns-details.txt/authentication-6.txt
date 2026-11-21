@@ -1,0 +1,88 @@
+When does HTTP start after TLS?
+HTTP starts right after the client sends its Finished message. There is no extra round trip. The client's first HTTP request goes out immediately behind the Finished, often in the same TCP packet.
+
+The full timeline
+Client                                                        Server
+
+ ── DNS lookup ──────────────────────────────────────────►  (not TLS, not HTTP)
+
+ ── TCP: SYN ──────────────────────────────────────────────►
+ ◄─ TCP: SYN-ACK ────────────────────────────────────────────   1 round trip
+ ── TCP: ACK ──────────────────────────────────────────────►
+
+ ── ClientHello ───────────────────────────────────────────►   ← TLS starts here
+ ◄─ ServerHello, {EncryptedExtensions}, {Certificate},
+    {CertificateVerify}, {Finished} ─────────────────────────   1 round trip
+ ── {Finished} ────────────────────────────────────────────►   ← TLS handshake done
+ ── [GET / HTTP/1.1 ...] ──────────────────────────────────►   ← HTTP starts here
+ ◄─ [HTTP/1.1 200 OK ...] ───────────────────────────────────   1 round trip
+TLS starts with the ClientHello, which is the first thing sent after the TCP connection is up. HTTP starts with the request that follows the client's Finished.
+
+The exact moment
+The handshake ends when the client sends its Finished (step 7 in the earlier diagram). Here's why the client can start HTTP right then:
+
+The client has already verified the server's certificate, signature, and Finished. It knows who it's talking to.
+The client has already derived the application traffic keys. It computed them when it verified the server's Finished.
+The client sends its own Finished, encrypted with the handshake key.
+It then switches to its client application traffic key and sends the HTTP request, encrypted, in the next record.
+The client doesn't wait for a reply to its Finished, so the Finished and the first HTTP request travel together.
+
+In the demo trace, that request was:
+
+GET / HTTP/1.1
+Host: mybank.local
+On the wire it appeared as one record, 17 03 03 xx xx <ciphertext> <16-byte tag>. That's the same 17 record type used for the encrypted handshake messages. The observer can't distinguish them, apart from timing and length.
+
+What the server does at that point
+The server receives the client's Finished and verifies it. Only then does it treat the incoming data as trustworthy and process the HTTP request. If the Finished check fails, the server aborts and the request is discarded.
+
+This matters most for mTLS: the server has to wait for the client's Certificate, CertificateVerify, and Finished before acting on anything, since until then it doesn't know who is asking.
+
+Who speaks first
+Client: sends the first HTTP bytes, because HTTP is a request/response protocol.
+Server: technically could send application data as soon as it sends its own Finished (before the client's Finished arrives). This is called 0.5-RTT data. In practice a web server has nothing to send yet, since it's waiting for a request. Protocols where the server speaks first, such as SMTP or FTP servers, are the case where this can matter. The catch is that the client hasn't been verified at that point.
+Which HTTP version starts
+The version is decided inside the TLS handshake by ALPN (Application-Layer Protocol Negotiation):
+
+The client's ClientHello lists what it speaks, such as h2 and http/1.1.
+The server's EncryptedExtensions (step 3) answers with one, say h2.
+After the handshake, the first bytes are in that protocol's format.
+ALPN result	First bytes the client sends
+http/1.1	Text: GET / HTTP/1.1\r\nHost: ...
+h2	Binary: the connection preface PRI * HTTP/2.0..., then SETTINGS frames, then the request as a HEADERS frame
+In my demo the extensions list was empty, so no ALPN was negotiated, and the client just sent HTTP/1.1 text. A real browser and server would agree on h2.
+
+A message that arrives before the response: NewSessionTicket
+After the handshake completes, the server typically sends one or two NewSessionTicket messages. They are encrypted under the application keys and carry the data needed for session resumption next time. They sit in the same stream as HTTP data but belong to TLS, not HTTP. Your HTTP library never sees them.
+
+How long until the first HTTP byte arrives
+Counting round trips (RTT) from the moment you hit Enter, ignoring DNS:
+
+Setup	Round trips before the HTTP request is sent	Until response starts
+TLS 1.3 over TCP	2 (1 for TCP + 1 for TLS)	3
+TLS 1.2 over TCP	3 (1 for TCP + 2 for TLS)	4
+TLS 1.3 with 0-RTT resumption	1 (TCP only), and the request rides inside the ClientHello	2
+HTTP/3 over QUIC	1 (transport and TLS 1.3 combined), or 0 on resumption	2 (or 1)
+If your server is 50 ms away, TLS 1.3 needs about 100 ms before the client can send its request, and the response begins at about 150 ms. That is why the TLS 1.3 handshake being one round trip shorter matters for web performance.
+
+The 0-RTT exception
+On a resumed connection, the client can send HTTP data with its very first flight, encrypted under a key derived from the previous session (early data). This means HTTP starts before the handshake has completed:
+
+Client                                           Server
+ ── ClientHello + early data [GET /...] ────────►
+ ◄─ ServerHello, ..., Finished ───────────────────
+The catch is that early data can be replayed by an attacker who recorded it, because the server hasn't yet contributed fresh randomness. So it should only carry safe, idempotent requests (a plain page GET, not "transfer $500"). Many servers disable 0-RTT or restrict it for that reason.
+
+What TLS does while HTTP runs
+TLS doesn't stop when HTTP starts. From then on it acts as the record layer wrapping every HTTP byte, both requests and responses:
+
+HTTP request bytes  →  split into records  →  AES-GCM encrypt + tag  →  TCP
+Your HTTP application sees plaintext. Everything on the network is ciphertext. At the end, either side sends a close_notify alert to close the TLS session cleanly before TCP closes. If the connection is reused (HTTP keep-alive or HTTP/2), many requests share the same TLS session and keys, so the handshake cost is paid once.
+
+Summary
+TLS begins with the ClientHello, after TCP connects.
+HTTP begins right after the client's Finished, in the next encrypted record, with no extra wait.
+The HTTP version (HTTP/1.1 or HTTP/2) is agreed during the handshake through ALPN.
+After that, TLS quietly encrypts every HTTP message on the connection.
+I can show a real trace with HTTP flowing after the handshake (using curl -v or openssl s_client with a key log), or explain how HTTP/3 over QUIC merges the TCP and TLS steps.
+

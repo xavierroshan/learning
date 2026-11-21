@@ -1,0 +1,20 @@
+Important git command
+
+
+git init --> initializes the git for a folder 
+git status --> status of the files
+git add file --> add file to the staging 
+git add .. -> add all untracked files to the stages
+git commit -m " " --> commit the branch
+git branch -c branchA --> create a branch
+git branch -D branch --> delete a branch 
+git switch branchA --> switch to a branch 
+git merge branchA --> merge branchA to the current branch 
+git diff main branchA --> show the diff between the branches 
+git diff mainA...branch --> show main - branchA
+git remote <name> url --> connecting to remote github repo
+git push -u <name> master --> first time push
+git pull or git fetch --> update the local with latest remote
+git clone url. --> remote automaticaly configured 
+git remote -v --> list remote repo
+pull request --> go to github and do it

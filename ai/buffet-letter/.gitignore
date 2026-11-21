@@ -1,0 +1,9 @@
+.venv/
+work/
+__pycache__/
+chroma_db/
+node_modules/
+.sites-runtime/
+*.zip
+!dist/downloads/buffett_letters_companion.zip
+search_results.csv

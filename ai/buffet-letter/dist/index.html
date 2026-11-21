@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buffett Letters Search</title>
+  <meta name="description" content="Explore Berkshire shareholder letters by meaning, year, and author. Read passages in their original context.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="./" class="brand"><span class="brand-icon" aria-hidden="true">B<span>.</span></span><span>THE LETTERS<br><small>A Berkshire reading room</small></span></a>
+    <nav aria-label="Main"><a class="active" href="./">Search</a><a id="notebook-link" href="https://chatgpt.com/space/page_ae2ba38d36ec8191b81c940a55d0009d" target="_blank" rel="noopener">Notebook & guide <span aria-hidden="true">↗</span></a><button id="about-open" class="plain">About the collection</button></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">WARREN BUFFETT · BERKSHIRE HATHAWAY</p>
+      <h1>Ideas compound.<br><em>Find where they began.</em></h1>
+      <p class="intro">Explore decades of shareholder letters. Ask a question,<br class="desktop"> follow an idea, and read the original words in context.</p>
+      <div class="collection-line"><span class="status-dot"></span><span id="collection-summary">Opening the collection…</span><span class="divider">/</span><span>Source-linked passages</span></div>
+    </section>
+    <div class="workspace">
+      <aside class="filters" aria-label="Search filters">
+        <div class="aside-title"><h2>Refine your reading</h2><button id="reset" class="text-button">Reset</button></div>
+        <label for="author">Author</label><select id="author"><option value="Warren Buffett">Warren Buffett</option><option value="all">All authors</option><option value="Charlie Munger">Charlie Munger</option><option value="Greg Abel">Greg Abel</option></select>
+        <fieldset><legend>Reporting years</legend><div class="year-inputs"><label><span class="sr-only">From year</span><input id="year-from" type="number" min="1977" max="2025" value="1977"></label><span>—</span><label><span class="sr-only">To year</span><input id="year-to" type="number" min="1977" max="2025" value="2024"></label></div></fieldset>
+        <div class="era-buttons"><button data-era="1977,1995">Early years</button><button data-era="2000,2010">2000–2010</button><button data-era="2010,2024">Recent Buffett</button></div>
+        <label for="contains">Must contain <small>optional</small></label><input id="contains" type="text" maxlength="100" placeholder="e.g. GEICO"><p class="input-note">Exact text, case-sensitive.</p>
+        <label for="limit">Passages to show</label><select id="limit"><option value="6">6 passages</option><option value="12">12 passages</option><option value="20">20 passages</option></select>
+        <div class="source-note"><span aria-hidden="true">↗</span><p><strong>Go to the source.</strong><br>Every passage links to Berkshire’s original letter. PDF links open at the cited page.</p></div>
+        <div class="author-note">The 2025 annual letter is by Greg Abel. Charlie Munger’s 2014 anniversary essay is labeled separately.</div>
+      </aside>
+      <section class="reading-area" aria-label="Search the letters">
+        <form id="search-form">
+          <label class="sr-only" for="query">Question or topic</label>
+          <div class="search-box"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg><input id="query" name="query" maxlength="500" placeholder="What makes a business worth owning?" autocomplete="off"><button id="search-button" type="submit">Search <span aria-hidden="true">↗</span></button></div>
+          <div class="search-options"><div class="mode-switch" role="group" aria-label="Search method"><button type="button" id="semantic-mode" class="selected" aria-pressed="true">By meaning</button><button type="button" id="keyword-mode" aria-pressed="false">By keywords</button></div><span id="engine-status">Meaning search loads a model on first use</span></div>
+        </form>
+        <div id="status" role="status" aria-live="polite"></div>
+        <div id="suggestions" class="suggestions"><span>START WITH AN IDEA</span><div><button data-query="Why is insurance float valuable?">Insurance float <span>↗</span></button><button data-query="When should a company repurchase its shares?">Share buybacks <span>↗</span></button><button data-query="How does Buffett judge management?">Great management <span>↗</span></button><button data-query="What investment mistakes has Buffett admitted?">Mistakes & lessons <span>↗</span></button><button data-query="What makes a durable competitive advantage?">Economic moats <span>↗</span></button></div></div>
+        <section id="results-section" hidden>
+          <div class="results-heading"><div><p class="eyebrow">FROM THE ARCHIVE</p><h2 id="results-title">Search results</h2><p id="results-description"></p></div><button id="export-results" class="outline-button">Export results ↓</button></div>
+          <div id="year-chart" class="year-chart" hidden><div class="chart-heading"><strong>Where these results appear</strong><span id="chart-caption"></span></div><div id="bars" class="bars" aria-label="Retrieved passages by year"></div><div class="chart-axis"><span>1977</span><span>2000</span><span>2025</span></div></div>
+          <div id="results"></div>
+        </section>
+        <section id="welcome" class="welcome"><div class="welcome-mark" aria-hidden="true">“</div><div><p class="eyebrow">A WAY INTO THE ARCHIVE</p><h2>Read across the years.</h2><p>Start with a question in your own words. Meaning search finds related passages even when the wording differs. Use keywords for a specific term, then narrow the years to compare eras.</p><div class="welcome-stats"><div><strong id="letter-count">—</strong><span>annual letters</span></div><div><strong id="passage-count">—</strong><span>searchable passages</span></div><div><strong>3</strong><span>distinct authors</span></div></div></div></section>
+        <div class="reading-footer"><span>Research, with the original context.</span><a href="https://www.berkshirehathaway.com/letters/letters.html" target="_blank" rel="noopener">Berkshire’s letter archive ↗</a></div>
+      </section>
+    </div>
+  </main>
+  <dialog id="about-dialog"><button id="about-close" aria-label="Close about" class="dialog-close">×</button><p class="eyebrow">ABOUT THE COLLECTION</p><h2>A reading tool,<br>grounded in the letters.</h2><p id="about-coverage"></p><p>Letters are split into overlapping passages of up to 160 words. Meaning search compares MiniLM embeddings using cosine similarity. The index is prepared with Python and ChromaDB; the hosted app searches an exported copy in your browser. The downloadable companion also includes a Python search server.</p><p>Relevance is a ranking measure, not confidence or fact verification. The year chart counts the top retrieved passages; it does not measure how often a topic occurs throughout the archive.</p><p>The first meaning search downloads a small model. Your query is processed on your device in hosted mode; it is not sent to an AI API. The model and runtime can be cached by your browser.</p><p>Annual reporting years differ from publication dates. The 2025 letter is by Greg Abel; the 2014 anniversary file includes Charlie Munger’s essay. Quotations within a letter may belong to other speakers.</p><p class="fine-print">Letters © Berkshire Hathaway. This private research tool is not affiliated with Berkshire Hathaway. Read the full source before drawing conclusions.</p><a class="outline-button" href="https://chatgpt.com/space/page_ae2ba38d36ec8191b81c940a55d0009d" target="_blank" rel="noopener">Open the notebook and guide ↗</a></dialog>
+  <script type="module" src="app.js?v=3"></script>
+</body>
+</html>

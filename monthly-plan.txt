@@ -1,0 +1,46 @@
+Phase 1: The Java Foundation (Weeks 1–3)Spring Boot is entirely built on Java. 
+Do not skip this, or Spring Boot will feel like total magic. 
+[1] (https://www.geeksforgeeks.org/springboot/best-way-to-master-spring-boot-a-complete-roadmap/)
+What to learn: Java syntax, strongly-typed variables vs. Python's dynamic types, Collections Framework (List, Map, Set), and deep-dive Object-Oriented Programming (OOP) concepts (Interfaces, Abstract Classes). 
+[1] (https://www.youtube.com/watch?v=JjpfJNC8XiA&t=66), 
+[2] (https://www.geeksforgeeks.org/springboot/best-way-to-master-spring-boot-a-complete-roadmap/)
+How to learn: Spend 15 minutes watching a Java core tutorial (like Amigoscode or Java Brains on YouTube). Spend the remaining 15 minutes converting a basic Python script you wrote in the past into strongly-typed Java code. 
+[1] (https://www.youtube.com/watch?v=Cw0J6jYJtzw)
+https://www.youtube.com/watch?v=TGVLmr194DI&list=PLZPZq0r_RZOOj_NOZYq_R2PECIMglLemc&index=2
+
+
+Phase 2: Core Spring Framework (Weeks 4–6)Before using Spring Boot's automation, you need to understand the underlying framework engine. 
+[1] (https://www.geeksforgeeks.org/springboot/best-way-to-master-spring-boot-a-complete-roadmap/)What to learn: Inversion of Control (IoC), Dependency Injection (DI), and the Bean Lifecycle.
+How to learn: Map these concepts back to Python. In Python, you write repo = Repository(). In Spring, you tell the framework @Component and let Spring instantiate it for you using @Autowired. 
+Practice writing small console applications where objects are wired together by Spring rather than manually by you. 
+[1] (https://www.youtube.com/watch?v=gJrjgg1KVL4&t=115), 
+[2] (https://www.geeksforgeeks.org/springboot/best-way-to-master-spring-boot-a-complete-roadmap/), 
+[3] (https://medium.com/lets-code-future/how-i-learned-spring-boot-without-hating-my-life-6ffa855c1445)
+
+
+Phase 3: Spring Boot & Data (Weeks 7–10)
+This is where you build functional software. 
+You will learn to stand up web servers instantly. 
+
+1] (https://levelup.gitconnected.com/8-best-courses-to-learn-spring-boot-in-depth-4066996eeee0), 
+[2] (https://www.youtube.com/watch?v=Cw0J6jYJtzw)
+What to learn: Spring Initializr to seed projects, Spring Web (@RestController, @GetMapping, @PostMapping), and Spring Data JPA to connect to databases (H2 or PostgreSQL) without writing raw SQL. 
+[1] (https://www.youtube.com/watch?v=Cw0J6jYJtzw), 
+[2] (https://www.youtube.com/watch?v=gJrjgg1KVL4&t=115), 
+[3] (https://levelup.gitconnected.com/8-best-courses-to-learn-spring-boot-in-depth-4066996eeee0)
+How to learn: Start building a Task Manager API or a Bookstore API.Week 
+7: Create the project and make a "Hello World" endpoint.
+
+Week 8: Build the JSON request/response models.Week 9-10: 
+Connect a database and write code to save data. 
+[1] (https://www.youtube.com/watch?v=Cw0J6jYJtzw), 
+[2] (https://levelup.gitconnected.com/8-best-courses-to-learn-spring-boot-in-depth-4066996eeee0), 
+[3] (https://www.youtube.com/watch?v=gJrjgg1KVL4&t=115)
+
+
+Phase 4: Production-Ready Concepts (Weeks 11–12)
+What to learn: Basic Spring Security (protecting endpoints), Exception Handling (@ControllerAdvice), and package management via Maven or Gradle.
+How to learn: Secure your API endpoints so only specific users can read or write tasks. Run your application locally using Docker or package it into a .jar file to see how Java enterprise applications run in production. 
+[1] (https://www.youtube.com/watch?v=Cw0J6jYJtzw), 
+[2] (https://levelup.gitconnected.com/8-best-courses-to-learn-spring-boot-in-depth-4066996eeee0), 
+[3] (https://medium.com/lets-code-future/how-i-learned-spring-boot-without-hating-my-life-6ffa855c1445)

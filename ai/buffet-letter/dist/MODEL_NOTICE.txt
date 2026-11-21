@@ -1,0 +1,7 @@
+Search model: Xenova/all-MiniLM-L6-v2 (quantized ONNX).
+Upstream: sentence-transformers/all-MiniLM-L6-v2.
+https://huggingface.co/Xenova/all-MiniLM-L6-v2
+https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+Licensed under Apache License 2.0; see MODEL_LICENSE.txt.
+Model files are distributed without modification.
+Letters are copyright Berkshire Hathaway and linked to their original sources.
